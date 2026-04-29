@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     # Apps propias del proyecto
     "apps.users",
     "apps.products",
+    "apps.security",
 ]
 
 MIDDLEWARE = [
@@ -45,6 +46,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.security.middleware.SecurityHeadersMiddleware",  # Ítem 13
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -70,12 +72,13 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Modelo de usuario personalizado (email como USERNAME_FIELD)
 AUTH_USER_MODEL = "users.CustomUser"
 
-# Validadores de contraseña de Django
+# Validadores de contraseña de Django + validador de fortaleza (Ítem 13)
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "apps.security.validators.StrongPasswordValidator"},  # Ítem 13
 ]
 
 # Localización

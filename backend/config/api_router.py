@@ -7,4 +7,5 @@ urlpatterns = [
     path("auth/", include("apps.users.urls")),
     path("users/", include("apps.users.profile_urls")),
     path("products/", include("apps.products.urls")),
+    path("security/", include("apps.security.urls")),  # Ítem 13
 ]
