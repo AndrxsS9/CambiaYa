@@ -42,6 +42,10 @@ export const AuthProvider = ({ children }) => {
     return profileResponse.data;
   };
 
+  const updateUser = (updatedData) => {
+    setUser((prev) => ({ ...prev, ...updatedData }));
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -49,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );
