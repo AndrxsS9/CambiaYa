@@ -1,9 +1,3 @@
-/**
- * Formulario de creación y edición de productos.
- *
- * Valida campos obligatorios, tamaño de imágenes (máx 10MB),
- * y envía los datos como multipart/form-data con token JWT.
- */
 import React, { useState, useEffect } from 'react';
 import { createProduct, updateProduct } from '../api/products';
 
@@ -23,8 +17,6 @@ const ProductForm = ({ initialData, onSuccess, onCancel }) => {
     const [previews, setPreviews] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-
-    // Liberar URLs de previsualización al desmontar (previene memory leak)
     useEffect(() => {
         return () => {
             previews.forEach((url) => URL.revokeObjectURL(url));
@@ -43,8 +35,6 @@ const ProductForm = ({ initialData, onSuccess, onCancel }) => {
             setError(`Algunas imágenes superan el límite de ${MAX_IMAGE_SIZE_MB}MB y no fueron añadidas.`);
             return;
         }
-
-        // Revocar URLs anteriores antes de crear nuevas
         previews.forEach((url) => URL.revokeObjectURL(url));
         const newPreviews = files.map((file) => URL.createObjectURL(file));
 

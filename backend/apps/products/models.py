@@ -1,15 +1,8 @@
-"""
-Modelos del módulo de productos de CambiaYa.
-
-Define el catálogo de productos disponibles para intercambio
-y las imágenes asociadas a cada publicación.
-"""
 from django.conf import settings
 from django.db import models
 
 
 class Product(models.Model):
-    """Producto publicado por un usuario para intercambio."""
 
     CATEGORY_CHOICES = [
         ('Electrónica', 'Electrónica'),
@@ -65,7 +58,6 @@ class Product(models.Model):
 
 
 class ProductImage(models.Model):
-    """Imagen asociada a un producto."""
 
     product = models.ForeignKey(
         Product,

@@ -1,6 +1,3 @@
-"""
-Router de la API v1 — agrega todos los módulos bajo /api/v1/.
-"""
 from django.urls import path, include
 
 urlpatterns = [

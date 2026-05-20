@@ -1,9 +1,3 @@
-"""
-Modelos de seguridad para el control de intentos de inicio de sesión.
-
-Registra cada intento de login y gestiona los bloqueos temporales
-por intentos fallidos consecutivos.
-"""
 import logging
 
 from django.db import models
@@ -13,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class LoginAttempt(models.Model):
-    """Registra cada intento de inicio de sesión (exitoso o fallido)."""
 
     email = models.EmailField(
         db_index=True,
@@ -47,7 +40,6 @@ class LoginAttempt(models.Model):
 
 
 class AccountLockout(models.Model):
-    """Bloqueo temporal de una cuenta tras superar el límite de intentos fallidos."""
 
     email = models.EmailField(
         unique=True,
@@ -69,7 +61,6 @@ class AccountLockout(models.Model):
         return f"Bloqueo — {self.email} (hasta {self.locked_until})"
 
     def is_locked(self):
-        """Verifica si el bloqueo sigue activo comparando con la hora actual."""
         locked = self.locked_until > now()
         if locked:
             logger.info("Cuenta %s sigue bloqueada hasta %s", self.email, self.locked_until)

@@ -1,4 +1,3 @@
-"""Rutas del módulo de usuarios (autenticación y registro)."""
 from django.urls import path
 
 from .views import CustomTokenObtainPairView, RegisterView

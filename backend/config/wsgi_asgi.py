@@ -1,6 +1,3 @@
-"""
-Punto de entrada ASGI del proyecto (para futuros WebSockets).
-"""
 import os
 from django.core.asgi import get_asgi_application
 
