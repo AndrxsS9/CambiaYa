@@ -1,286 +1,168 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import apiClient from '../api/apiClient';
-import { ArrowLeftRight, Check, X, Ban, Clock, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { getExchanges } from '../api/exchanges';
+import ExchangeCard from '../components/ExchangeCard';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { History, ArrowLeftRight, CheckCircle2, XCircle, Ban, Layers, RefreshCw } from 'lucide-react';
 
-export default function ExchangeHistory() {
-  const { user } = useAuth();
-  
-  // States
-  const [proposals, setProposals] = useState([]);
-  const [activeTab, setActiveTab] = useState('pending'); // pending, accepted, closed
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null); // id de la propuesta procesándose
+const TABS = [
+    { key: 'aceptada', label: 'Completados', icon: CheckCircle2, color: 'text-emerald-500' },
+    { key: 'rechazada', label: 'Rechazados', icon: XCircle, color: 'text-rose-500' },
+    { key: 'cancelada', label: 'Cancelados', icon: Ban, color: 'text-slate-400' },
+];
 
-  const fetchProposals = async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const response = await apiClient.get('exchanges/proposals/');
-      setProposals(response.data);
-    } catch (error) {
-      console.error('Error fetching proposals:', error);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
+const ExchangeHistory = () => {
+    const { currentUser, isAuthenticated } = useContext(AuthContext);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchProposals();
-  }, []);
+    const [activeTab, setActiveTab] = useState('aceptada');
+    const [proposals, setProposals] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  const handleAccept = async (id) => {
-    if (!window.confirm('¿Estás seguro de aceptar este intercambio? Esta acción marcará tus productos como no disponibles y cancelará otras ofertas del mismo producto.')) return;
-    
-    setActionLoading(id);
-    try {
-      await apiClient.patch(`exchanges/proposals/${id}/accept/`);
-      alert('¡Intercambio aceptado exitosamente!');
-      fetchProposals();
-    } catch (error) {
-      const errorMsg = error.response?.data?.error || 'No se pudo aceptar la propuesta.';
-      alert(errorMsg);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+    const fetchHistory = async () => {
+        if (!isAuthenticated) return;
+        setLoading(true);
+        try {
+            // Buscamos los intercambios en base al estado de la pestaña activa
+            const { data } = await getExchanges({ status: activeTab });
+            setProposals(data.results || data);
+        } catch (err) {
+            console.error('Error al cargar el historial de intercambios:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const handleReject = async (id) => {
-    if (!window.confirm('¿Estás seguro de rechazar esta propuesta de intercambio?')) return;
-    
-    setActionLoading(id);
-    try {
-      await apiClient.patch(`exchanges/proposals/${id}/reject/`);
-      fetchProposals();
-    } catch (error) {
-      alert('No se pudo rechazar la propuesta.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
+    useEffect(() => {
+        fetchHistory();
+    }, [activeTab, isAuthenticated]);
 
-  const handleCancel = async (id) => {
-    if (!window.confirm('¿Estás seguro de cancelar tu propuesta?')) return;
-    
-    setActionLoading(id);
-    try {
-      await apiClient.patch(`exchanges/proposals/${id}/cancel/`);
-      fetchProposals();
-    } catch (error) {
-      alert('No se pudo cancelar la propuesta.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Filtrar propuestas según la pestaña
-  const getFilteredProposals = () => {
-    if (activeTab === 'pending') {
-      return proposals.filter(p => p.status === 'pending');
-    }
-    if (activeTab === 'accepted') {
-      return proposals.filter(p => p.status === 'accepted');
-    }
-    // 'closed' incluye rechazadas y canceladas
-    return proposals.filter(p => p.status === 'rejected' || p.status === 'cancelled');
-  };
-
-  const filteredList = getFilteredProposals();
-
-  // Separar en enviadas y recibidas
-  const receivedProposals = filteredList.filter(p => p.receiver === user.id);
-  const sentProposals = filteredList.filter(p => p.proposer === user.id);
-
-  // Formato de fecha
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('es-ES', options);
-  };
-
-  // Retorna el Badge de estado
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <span className="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold">
-            <Clock size={12} /> Pendiente
-          </span>
+    const handleProposalUpdated = (updatedProposal) => {
+        // Actualiza la lista filtrando o reemplazando el elemento si cambió su estado
+        setProposals((prev) =>
+            prev.map((p) => (p.id === updatedProposal.id ? updatedProposal : p))
+                .filter((p) => p.status === activeTab)
         );
-      case 'accepted':
+    };
+
+    if (!isAuthenticated) {
         return (
-          <span className="flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold">
-            <CheckCircle2 size={12} /> Completado
-          </span>
-        );
-      case 'rejected':
-        return (
-          <span className="flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-3 py-1 rounded-full text-xs font-bold">
-            <XCircle size={12} /> Rechazado
-          </span>
-        );
-      case 'cancelled':
-      default:
-        return (
-          <span className="flex items-center gap-1 bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-bold">
-            <Ban size={12} /> Cancelado
-          </span>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-100 text-center"
+                >
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-6">
+                        <History size={32} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Historial de Intercambios</h2>
+                    <p className="text-slate-500 mb-6">
+                        Inicia sesión para revisar tu registro histórico de intercambios completados y cerrados.
+                    </p>
+                    <Link to="/login" className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-blue-200 text-center">
+                        Iniciar Sesión
+                    </Link>
+                </motion.div>
+            </div>
         );
     }
-  };
-
-  const renderProposalCard = (prop, isReceived) => {
-    const otherParty = isReceived ? prop.proposer_details : prop.receiver_details;
-    const isPending = prop.status === 'pending';
 
     return (
-      <div key={prop.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        {/* Cuerpo principal */}
-        <div className="flex-grow flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          
-          {/* Tu producto */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex-1 min-w-[200px]">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tu producto</span>
-            <h4 className="font-bold text-slate-800 text-sm truncate mt-1">
-              {isReceived ? prop.requested_product_details?.title : prop.offered_product_details?.title || 'Intercambio directo (Sin ofrecer artículo)'}
-            </h4>
-            <p className="text-xs text-slate-400 mt-1 truncate">
-              {isReceived ? prop.requested_product_details?.description : prop.offered_product_details?.description || 'Solicitud de donación o compra en trueque'}
-            </p>
-          </div>
+        <div className="min-h-screen bg-slate-50 pt-12 pb-24 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+                {/* Cabecera del Historial */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+                    <div>
+                        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+                            Historial de <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Intercambios</span>
+                        </h1>
+                        <p className="text-slate-500">
+                            Revisa el registro de tus trueques finalizados o cerrados en la plataforma.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/exchanges')}
+                        className="inline-flex items-center justify-center px-5 py-2.5 border border-slate-200 text-sm font-semibold rounded-xl text-slate-650 bg-white hover:bg-slate-50 shadow-sm transition-all self-start sm:self-auto gap-1.5"
+                    >
+                        <ArrowLeftRight size={16} />
+                        Gestionar Activos
+                    </button>
+                </div>
 
-          {/* Flechas de trueque */}
-          <div className="flex items-center justify-center p-2 text-blue-600 bg-blue-50 rounded-full w-10 h-10 self-center">
-            <ArrowLeftRight size={18} />
-          </div>
+                {/* Tabs de Historial */}
+                <div className="flex bg-slate-200/60 p-1.5 rounded-2xl mb-10 max-w-lg">
+                    {TABS.map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.key;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+                                    isActive 
+                                        ? 'bg-white text-blue-600 shadow-sm' 
+                                        : 'text-slate-650 hover:text-slate-800'
+                                }`}
+                            >
+                                <Icon size={16} className={isActive ? tab.color : 'text-slate-400'} />
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
 
-          {/* Producto del otro */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex-1 min-w-[200px]">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              {isReceived ? 'Te ofrecen de' : 'Solicitas a'}: {otherParty?.name}
-            </span>
-            <h4 className="font-bold text-slate-800 text-sm truncate mt-1">
-              {isReceived ? prop.offered_product_details?.title || 'Intercambio directo' : prop.requested_product_details?.title}
-            </h4>
-            <p className="text-xs text-slate-400 mt-1 truncate">
-              {isReceived ? prop.offered_product_details?.description || '' : prop.requested_product_details?.description}
-            </p>
-          </div>
-        </div>
-
-        {/* Info y Acciones */}
-        <div className="flex flex-col items-end gap-3 justify-center min-w-[120px]">
-          {getStatusBadge(prop.status)}
-          
-          <span className="text-[10px] text-slate-400 font-medium">
-            Producido el {formatDate(prop.created_at)}
-          </span>
-
-          {isPending && (
-            <div className="flex gap-2 w-full md:w-auto">
-              {isReceived ? (
-                <>
-                  <button
-                    onClick={() => handleReject(prop.id)}
-                    disabled={actionLoading === prop.id}
-                    className="flex-1 md:flex-initial flex items-center justify-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    <X size={14} /> Rechazar
-                  </button>
-                  <button
-                    onClick={() => handleAccept(prop.id)}
-                    disabled={actionLoading === prop.id}
-                    className="flex-1 md:flex-initial flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-md shadow-emerald-100 transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    <Check size={14} /> Aceptar
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => handleCancel(prop.id)}
-                  disabled={actionLoading === prop.id}
-                  className="w-full flex items-center justify-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  <Trash2 size={14} /> Cancelar oferta
-                </button>
-              )}
+                {/* Grid o loader */}
+                {loading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                ) : (
+                    <>
+                        {proposals.length === 0 ? (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-slate-100 shadow-sm p-8"
+                            >
+                                <div className="bg-slate-50 p-6 rounded-full mb-4">
+                                    <Layers className="h-12 w-12 text-slate-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Historial vacío</h3>
+                                <p className="text-slate-400 max-w-sm mb-6">
+                                    No tienes propuestas en estado <span className="font-semibold text-slate-600">"{TABS.find(t => t.key === activeTab)?.label}"</span>.
+                                </p>
+                                <Link to="/" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-200">
+                                    Explorar Productos
+                                </Link>
+                            </motion.div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <AnimatePresence mode="popLayout">
+                                    {proposals.map((proposal) => (
+                                        <motion.div
+                                            key={proposal.id}
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            layout
+                                        >
+                                            <ExchangeCard
+                                                proposal={proposal}
+                                                currentUser={currentUser}
+                                                onProposalUpdated={handleProposalUpdated}
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
-          )}
         </div>
-      </div>
     );
-  };
+};
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Título de Sección */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Gestión de Intercambios</h1>
-          <p className="text-slate-500 text-sm mt-1">Monitorea y responde a tus propuestas de trueque.</p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 mb-8 gap-4">
-        {[
-          { key: 'pending', label: 'Pendientes', color: 'border-amber-500 text-amber-600' },
-          { key: 'accepted', label: 'Completados', color: 'border-emerald-500 text-emerald-600' },
-          { key: 'closed', label: 'Historial / Cerrados', color: 'border-slate-500 text-slate-600' }
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`pb-3 font-semibold text-sm transition-all border-b-2 cursor-pointer ${
-              activeTab === tab.key
-                ? `${tab.color} font-bold`
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-28 bg-white border border-slate-100 rounded-3xl animate-pulse"></div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-8">
-          {/* Sección de Recibidas */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-              Solicitudes Recibidas ({receivedProposals.length})
-            </h3>
-            {receivedProposals.length === 0 ? (
-              <div className="bg-white border border-slate-200 border-dashed rounded-3xl p-8 text-center text-slate-400 text-sm">
-                No tienes solicitudes recibidas en esta pestaña.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {receivedProposals.map(p => renderProposalCard(p, true))}
-              </div>
-            )}
-          </div>
-
-          {/* Sección de Enviadas */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
-              Ofertas Enviadas ({sentProposals.length})
-            </h3>
-            {sentProposals.length === 0 ? (
-              <div className="bg-white border border-slate-200 border-dashed rounded-3xl p-8 text-center text-slate-400 text-sm">
-                No has realizado ofertas en esta pestaña.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sentProposals.map(p => renderProposalCard(p, false))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+export default ExchangeHistory;

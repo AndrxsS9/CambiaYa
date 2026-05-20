@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { getProduct } from '../api/products';
 import ExchangeModal from '../components/ExchangeModal';
+import { ArrowLeft, Tag, DollarSign, User, Calendar, CheckCircle, AlertCircle, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const PLACEHOLDER_IMAGE = 'https://placehold.co/600x400?text=Sin+imagen';
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=600&q=80';
 
 const ProductDetail = () => {
     const { id } = useParams();
@@ -16,6 +18,7 @@ const ProductDetail = () => {
     const [error, setError] = useState(null);
     const [showExchangeModal, setShowExchangeModal] = useState(false);
     const [exchangeSuccess, setExchangeSuccess] = useState(false);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -23,7 +26,8 @@ const ProductDetail = () => {
             try {
                 const { data } = await getProduct(id);
                 setProduct(data);
-            } catch {
+            } catch (err) {
+                console.error('Error al cargar el producto:', err);
                 setError('No se pudo cargar el producto. Es posible que no exista.');
             } finally {
                 setLoading(false);
@@ -40,19 +44,34 @@ const ProductDetail = () => {
 
     if (loading) {
         return (
-            <div className="product-detail-page">
-                <p className="product-detail__loading">Cargando producto...</p>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
     }
 
-    if (error) {
+    if (error || !product) {
         return (
-            <div className="product-detail-page">
-                <p className="error-message">{error}</p>
-                <button className="btn btn--secondary" onClick={() => navigate('/products')}>
-                    ← Volver a productos
-                </button>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-100 text-center"
+                >
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-rose-50 text-rose-500 rounded-full mb-6">
+                        <AlertCircle size={32} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Producto no disponible</h2>
+                    <p className="text-slate-500 mb-6">
+                        El artículo que buscas no se ha encontrado o no está disponible en este momento.
+                    </p>
+                    <button 
+                        onClick={() => navigate('/products')}
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl transition-all border border-slate-200 text-center cursor-pointer"
+                    >
+                        Volver a Explorar
+                    </button>
+                </motion.div>
             </div>
         );
     }
@@ -60,116 +79,210 @@ const ProductDetail = () => {
     const isOwner = currentUser && currentUser.id === product.owner;
     const canExchange = currentUser && !isOwner && product.available !== false;
 
-    const imageUrl = product.images?.length > 0
-        ? product.images[0].url
-        : PLACEHOLDER_IMAGE;
+    // Obtener imágenes
+    const productImages = product.images?.length > 0 
+        ? product.images.map(img => img.url) 
+        : [PLACEHOLDER_IMAGE];
+        
+    const activeImage = productImages[activeImageIndex] || PLACEHOLDER_IMAGE;
 
     return (
-        <div className="product-detail-page">
-            <div className="product-detail__breadcrumb">
-                <Link to="/products">← Volver a productos</Link>
+        <div className="min-h-screen bg-slate-50 pt-10 pb-24 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+                {/* breadcrumb */}
+                <div className="mb-6">
+                    <button 
+                        onClick={() => navigate('/products')}
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer group"
+                    >
+                        <ArrowLeft size={16} className="transform group-hover:-translate-x-0.5 transition-transform" />
+                        <span>Volver a Explorar</span>
+                    </button>
+                </div>
+
+                {/* Grid principal */}
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                    {/* Sección izquierda: Fotos */}
+                    <div className="w-full lg:w-1/2 flex flex-col gap-4">
+                        <div className="aspect-[4/3] w-full bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 relative group">
+                            <img
+                                src={activeImage}
+                                alt={product.title}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            {product.available === false && (
+                                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                                    <span className="bg-slate-900/80 text-white font-bold text-sm tracking-wide uppercase px-4 py-2 rounded-xl border border-slate-700">
+                                        No Disponible
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Miniaturas de imágenes */}
+                        {productImages.length > 1 && (
+                            <div className="flex gap-3 overflow-x-auto pb-1">
+                                {productImages.map((imgUrl, index) => {
+                                    const isActive = activeImageIndex === index;
+                                    return (
+                                        <button
+                                            key={index}
+                                            onClick={() => setActiveImageIndex(index)}
+                                            className={`w-20 h-20 rounded-xl overflow-hidden border-2 cursor-pointer flex-shrink-0 transition-all ${
+                                                isActive ? 'border-blue-500 shadow-sm scale-95' : 'border-slate-200 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <img
+                                                src={imgUrl}
+                                                alt={`${product.title} miniatura ${index + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Sección derecha: Info */}
+                    <div className="w-full lg:w-1/2">
+                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-8 flex flex-col min-h-[480px]">
+                            {/* Cabecera info */}
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                                <div>
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider rounded border border-blue-100 mb-2">
+                                        {product.category}
+                                    </span>
+                                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">
+                                        {product.title}
+                                    </h1>
+                                </div>
+
+                                <div className="flex-shrink-0">
+                                    {product.available !== false ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-xs font-bold">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Disponible
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 border border-slate-200 rounded-full text-xs font-bold">
+                                            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                            Cerrado
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Valor estimado */}
+                            {product.estimated_value && (
+                                <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-2 text-slate-500">
+                                        <div className="bg-blue-100 text-blue-600 p-1.5 rounded-lg">
+                                            <DollarSign size={16} />
+                                        </div>
+                                        <span className="text-xs font-bold uppercase tracking-wider">Valor Estimado</span>
+                                    </div>
+                                    <span className="text-2xl font-black text-slate-800">
+                                        ${parseFloat(product.estimated_value).toLocaleString('es-CO')}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Descripción */}
+                            <div className="border-t border-slate-100 pt-6 mb-6">
+                                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                    Descripción del artículo
+                                </span>
+                                <p className="text-slate-600 text-sm leading-relaxed">
+                                    {product.description || 'Sin descripción adicional para este producto.'}
+                                </p>
+                            </div>
+
+                            {/* Info de autor */}
+                            <div className="mt-auto pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400 font-semibold">
+                                <div className="flex items-center gap-1.5">
+                                    <User size={14} className="text-slate-350" />
+                                    <span>Publicado por: <strong className="text-slate-650">{product.owner_name || 'Miembro de CambiaYa'}</strong></span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar size={14} className="text-slate-350" />
+                                    <span>{new Date(product.created_at).toLocaleDateString('es-CO', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                    })}</span>
+                                </div>
+                            </div>
+
+                            {/* Acciones y Notificaciones de Éxito */}
+                            <div className="mt-8">
+                                <AnimatePresence>
+                                    {exchangeSuccess && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="mb-4 p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-bold rounded-2xl flex items-center gap-2"
+                                        >
+                                            <CheckCircle size={16} className="text-emerald-600 flex-shrink-0" />
+                                            <span>
+                                                ¡Propuesta enviada con éxito! Puedes gestionarla en{' '}
+                                                <Link to="/exchanges" className="underline text-emerald-950 font-extrabold hover:text-emerald-900 transition-colors">
+                                                    Mis Intercambios
+                                                </Link>.
+                                            </span>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {canExchange && (
+                                    <button
+                                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl transition-all shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 flex items-center justify-center gap-2 transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                                        onClick={() => setShowExchangeModal(true)}
+                                        id="btn-offer-exchange"
+                                    >
+                                        <ShoppingBag size={18} />
+                                        <span>Ofrecer Intercambio</span>
+                                    </button>
+                                )}
+
+                                {product.available === false && (
+                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs font-semibold text-slate-500">
+                                        Este producto ya no está disponible para intercambio.
+                                    </div>
+                                )}
+
+                                {isOwner && (
+                                    <div className="p-4 bg-blue-50/50 border border-blue-100/50 rounded-2xl text-center text-xs font-semibold text-blue-700">
+                                        Este es tu producto. No puedes hacerte propuestas a ti mismo.
+                                    </div>
+                                )}
+
+                                {!currentUser && (
+                                    <Link
+                                        to="/login"
+                                        className="block w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-center transition-all border border-slate-200 text-sm"
+                                    >
+                                        Inicia sesión para ofrecer un intercambio
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="product-detail">
-                <div className="product-detail__image-section">
-                    <img
-                        src={imageUrl}
-                        alt={product.title}
-                        className="product-detail__image"
+            {/* Modal de Intercambio */}
+            <AnimatePresence>
+                {showExchangeModal && (
+                    <ExchangeModal
+                        requestedProduct={product}
+                        currentUser={currentUser}
+                        onClose={() => setShowExchangeModal(false)}
+                        onSuccess={handleExchangeSuccess}
                     />
-                    {product.images?.length > 1 && (
-                        <div className="product-detail__thumbnails">
-                            {product.images.map((img, index) => (
-                                <img
-                                    key={img.id || index}
-                                    src={img.url}
-                                    alt={`${product.title} - imagen ${index + 1}`}
-                                    className="product-detail__thumbnail"
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="product-detail__info">
-                    <div className="product-detail__header">
-                        <h1 className="product-detail__title">{product.title}</h1>
-                        <span className={`product-detail__availability ${
-                            product.available !== false ? 'product-detail__availability--available' : 'product-detail__availability--unavailable'
-                        }`}>
-                            {product.available !== false ? '● Disponible' : '● No disponible'}
-                        </span>
-                    </div>
-
-                    <span className="product-detail__category">{product.category}</span>
-
-                    {product.estimated_value && (
-                        <p className="product-detail__value">
-                            Valor estimado: <strong>${parseFloat(product.estimated_value).toLocaleString('es-CO')}</strong>
-                        </p>
-                    )}
-
-                    <div className="product-detail__description">
-                        <h3>Descripción</h3>
-                        <p>{product.description}</p>
-                    </div>
-
-                    <div className="product-detail__owner-info">
-                        <span>Publicado por: <strong>{product.owner_name || 'Usuario'}</strong></span>
-                        <span className="product-detail__date">
-                            {new Date(product.created_at).toLocaleDateString('es-CO', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                            })}
-                        </span>
-                    </div>
-
-                    {exchangeSuccess && (
-                        <div className="product-detail__success">
-                            ✓ ¡Propuesta de intercambio enviada exitosamente! Puedes ver tus propuestas en{' '}
-                            <Link to="/exchanges">Mis Intercambios</Link>.
-                        </div>
-                    )}
-
-                    {canExchange && (
-                        <button
-                            className="btn btn--exchange"
-                            onClick={() => setShowExchangeModal(true)}
-                            id="btn-offer-exchange"
-                        >
-                            🔄 Ofrecer Intercambio
-                        </button>
-                    )}
-
-                    {product.available === false && (
-                        <p className="product-detail__unavailable-msg">
-                            Este producto ya no está disponible para intercambio.
-                        </p>
-                    )}
-
-                    {isOwner && (
-                        <p className="product-detail__owner-msg">
-                            Este es tu producto. No puedes ofrecerte un intercambio a ti mismo.
-                        </p>
-                    )}
-
-                    {!currentUser && (
-                        <p className="product-detail__login-msg">
-                            <Link to="/login">Inicia sesión</Link> para ofrecer un intercambio.
-                        </p>
-                    )}
-                </div>
-            </div>
-
-            {showExchangeModal && (
-                <ExchangeModal
-                    requestedProduct={product}
-                    currentUser={currentUser}
-                    onClose={() => setShowExchangeModal(false)}
-                    onSuccess={handleExchangeSuccess}
-                />
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 };
