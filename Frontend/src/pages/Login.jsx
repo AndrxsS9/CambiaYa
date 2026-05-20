@@ -1,3 +1,7 @@
+/**
+ * Página de Login.
+ * Implementa el flujo de autenticación JWT a través de AuthContext.
+ */
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -24,6 +28,7 @@ const Login = () => {
       await login(email, password);
       navigate('/profile');
     } catch (err) {
+      // Error genérico 401 per business_rules.md
       setError('Credenciales inválidas. Por favor intenta de nuevo.');
     } finally {
       setLoading(false);
