@@ -48,4 +48,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def _save_images(self, product, image_files):
         for image_file in image_files:
-            ProductImage.objects.create(product=product, image=image_file)
+            try:
+                ProductImage.objects.create(product=product, image=image_file)
+                logger.info("Imagen guardada en Cloudinary: %s", product.images.last().image.url)
+            except Exception as e:
+                logger.error("Error al guardar imagen en Cloudinary: %s", str(e))
