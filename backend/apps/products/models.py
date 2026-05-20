@@ -39,6 +39,10 @@ class Product(models.Model):
         related_name='products',
         verbose_name="Propietario",
     )
+    available = models.BooleanField(
+        default=True,
+        verbose_name="Disponible",
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Fecha de creación",
