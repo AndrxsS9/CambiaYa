@@ -36,16 +36,18 @@ class ProductSerializer(serializers.ModelSerializer):
     """
 
     images = ProductImageSerializer(many=True, read_only=True)
+    owner_id = serializers.IntegerField(source="owner.id", read_only=True)
     owner_name = serializers.SerializerMethodField()
+    owner_email = serializers.EmailField(source="owner.email", read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'title', 'description', 'category',
-            'estimated_value', 'owner', 'owner_name',
-            'images', 'created_at', 'updated_at',
+            'estimated_value', 'is_available', 'owner_id', 'owner_name',
+            'owner_email', 'images', 'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'owner_id', 'owner_name', 'owner_email', 'created_at', 'updated_at']
 
     def get_owner_name(self, obj):
         """Retorna el nombre completo del propietario o su email como fallback."""

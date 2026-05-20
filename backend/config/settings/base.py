@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.security',
     'apps.products',
+    'apps.chats',
+    'apps.exchanges',
 ]
 
 MIDDLEWARE = [

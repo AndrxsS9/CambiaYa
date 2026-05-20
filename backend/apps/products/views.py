@@ -10,12 +10,20 @@ from rest_framework import viewsets, filters, status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from apps.security.permissions import IsOwnerOrReadOnly
 from .models import Product, ProductImage
 from .serializers import ProductSerializer
 
 logger = logging.getLogger(__name__)
+
+
+class ProductPagination(PageNumberPagination):
+    """Paginación para productos con tamaño de 10 por página."""
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -34,6 +42,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    pagination_class = ProductPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'title', 'estimated_value']
