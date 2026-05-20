@@ -77,3 +77,7 @@ desktop.ini
 *.log
 /tmp/
 .temp/
+
+# Explicaciones locales
+SPRINT2_DAVID.md
+EXPLICACION_TECNICA_SPRINT2.md

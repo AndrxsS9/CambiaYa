@@ -15,8 +15,8 @@ class ProductImageInline(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     """Panel de administración para Productos."""
-    list_display = ["title", "owner", "category", "is_available", "created_at"]
-    list_filter = ["category", "is_available"]
+    list_display = ["title", "owner", "category", "created_at"]
+    list_filter = ["category"]
     search_fields = ["title", "description", "owner__email"]
     ordering = ["-created_at"]
     inlines = [ProductImageInline]

@@ -110,7 +110,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         4. Si es exitosa → registrar intento exitoso, limpiar bloqueos.
         5. Si falla → registrar intento fallido, evaluar si bloquear.
         """
-        email = request.data.get("email") or request.data.get("username")
+        email = None
+        if hasattr(request.data, 'get'):
+            email = request.data.get("email") or request.data.get("username")
+        
         ip_address = self._get_client_ip(request)
 
         if email:

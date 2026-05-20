@@ -30,6 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'password']
         extra_kwargs = {
+            'username': {'required': False},
             'email': {
                 'error_messages': {
                     'unique': 'Este correo electrónico ya está registrado.',
