@@ -1,9 +1,13 @@
+/**
+ * Barra de navegación principal de CambiaYa.
+ * Adapta sus opciones según el estado de autenticación del usuario.
+ * Incluye navegación a: Productos, Intercambios, Historial, Chats, Perfil.
+ */
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User, Package, Repeat } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { currentUser, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -12,64 +16,123 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-                    <Link to="/" className="flex items-center space-x-2 group">
-            <div className="bg-blue-600 p-2 rounded-lg group-hover:rotate-12 transition-transform">
-              <Repeat className="text-white" size={20} />
+    <nav style={{
+      backgroundColor: '#1e293b',
+      borderBottom: '1px solid #334155',
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+    }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '64px' }}>
+          
+          {/* Logo */}
+          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              padding: '8px',
+              borderRadius: '10px',
+            }}>
+              <span style={{ color: 'white', fontSize: '18px' }}>⇄</span>
             </div>
-            <span className="text-xl font-bold text-slate-800 tracking-tight">Cambia<span className="text-blue-600">Ya</span></span>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', color: 'white' }}>
+              Cambia<span style={{ color: '#60a5fa' }}>Ya</span>
+            </span>
           </Link>
 
-                    <div className="flex items-center space-x-6">
-            <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium transition-colors">
-              Explorar
+          {/* Navigation links */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/products" id="navbar-products-link" style={navLinkStyle}>
+              🛍️ Explorar
             </Link>
 
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <Link to="/profile" className="flex items-center space-x-2 text-slate-700 hover:text-blue-600 font-semibold transition-colors" id="navbar-profile-link">
-                  {user?.profile_picture_url ? (
-                    <img
-                      src={user.profile_picture_url}
-                      alt="Avatar"
-                      className="w-8 h-8 rounded-lg object-cover border border-slate-200"
-                      id="navbar-avatar"
-                    />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold border border-blue-200"
-                      id="navbar-avatar-fallback"
-                    >
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                  )}
-                  <span className="hidden sm:inline">{user?.name?.split(' ')[0]}</span>
+              <>
+                <Link to="/exchanges" id="navbar-exchanges-link" style={navLinkStyle}>
+                  🔄 Intercambios
+                </Link>
+                <Link to="/exchange-history" id="navbar-history-link" style={navLinkStyle}>
+                  📋 Historial
+                </Link>
+                <Link to="/chats" id="navbar-chats-link" style={navLinkStyle}>
+                  💬 Chats
+                </Link>
+                <Link to="/profile" id="navbar-profile-link" style={{
+                  ...navLinkStyle,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}>
+                  <div style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '8px',
+                    background: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                  }} id="navbar-avatar-fallback">
+                    {currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <span style={{ display: 'none' }}>Perfil</span>
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-1 text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition-all"
                   id="navbar-logout-btn"
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #ef4444',
+                    color: '#ef4444',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseOver={(e) => { e.target.style.background = '#ef4444'; e.target.style.color = 'white'; }}
+                  onMouseOut={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#ef4444'; }}
                 >
-                  <LogOut size={18} />
+                  Salir
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center space-x-3">
-                <Link to="/login" className="text-slate-600 font-medium hover:text-blue-600 transition-colors">
+              <>
+                <Link to="/login" id="navbar-login-link" style={navLinkStyle}>
                   Ingresar
                 </Link>
-                <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100">
+                <Link to="/register" id="navbar-register-link" style={{
+                  background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                  color: 'white',
+                  padding: '8px 20px',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                }}>
                   Unirse
                 </Link>
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
     </nav>
   );
+};
+
+const navLinkStyle = {
+  color: '#94a3b8',
+  textDecoration: 'none',
+  padding: '6px 12px',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  transition: 'all 0.2s',
 };
 
 export default Navbar;

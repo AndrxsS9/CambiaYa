@@ -1,3 +1,8 @@
+/**
+ * Página de Perfil de Usuario (Ítem 3 — RF03, RNF01).
+ * Implementa: visualización de datos, edición de nombre/bio/ubicación,
+ * carga y previsualización de foto de perfil, validaciones y actualización del contexto global.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -55,6 +60,7 @@ const Profile = () => {
       }
     };
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* Auto-dismiss de mensajes después de 5 segundos */
@@ -69,6 +75,7 @@ const Profile = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Limpiar error del campo al empezar a editar
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -77,10 +84,13 @@ const Profile = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validar tipo de archivo
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setMsg({ type: 'error', text: 'Formato no permitido. Solo se aceptan imágenes JPEG, PNG o WebP.' });
       return;
     }
+    // Validar tamaño
     if (file.size > MAX_IMAGE_SIZE) {
       setMsg({ type: 'error', text: 'La imagen no puede superar los 10MB.' });
       return;
@@ -132,12 +142,15 @@ const Profile = () => {
       if (selectedFile) data.append('profile_picture', selectedFile);
 
       const updatedData = await updateProfile(data);
+
+      // Actualizar contexto global para que el Navbar refleje los cambios
       updateUser(updatedData);
       setSelectedFile(null);
       setPreview(updatedData.profile_picture_url || preview);
       setIsEditing(false);
       setMsg({ type: 'success', text: '¡Perfil actualizado correctamente!' });
     } catch (err) {
+      // Mostrar errores de validación del backend si existen
       const backendErrors = err.response?.data;
       if (backendErrors && typeof backendErrors === 'object') {
         const fieldErrors = {};
@@ -199,12 +212,15 @@ const Profile = () => {
         transition={{ duration: 0.4 }}
         className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100"
       >
-                <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 h-36">
+        {/* Banner de cabecera con gradiente */}
+        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 h-36">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDgpIi8+PC9zdmc+')] opacity-50" />
         </div>
 
-                <div className="px-8 -mt-16 pb-6 sm:flex sm:items-end sm:space-x-6">
-                    <div className="relative inline-block flex-shrink-0">
+        {/* Sección de Avatar + Info del usuario */}
+        <div className="px-8 -mt-16 pb-6 sm:flex sm:items-end sm:space-x-6">
+          {/* Avatar con botón de cámara */}
+          <div className="relative inline-block flex-shrink-0">
             <motion.img
               key={preview || 'default'}
               initial={{ scale: 0.9, opacity: 0 }}
@@ -234,7 +250,8 @@ const Profile = () => {
             )}
           </div>
 
-                    <div className="mt-6 sm:mt-0 flex-1 min-w-0">
+          {/* Info principal del usuario */}
+          <div className="mt-6 sm:mt-0 flex-1 min-w-0">
             <h1 className="text-2xl font-bold text-slate-800 truncate" id="profile-display-name">
               {user?.name || 'Usuario'}
             </h1>
@@ -255,7 +272,8 @@ const Profile = () => {
             )}
           </div>
 
-                    <div className="mt-4 sm:mt-0 flex-shrink-0">
+          {/* Botón editar / cancelar */}
+          <div className="mt-4 sm:mt-0 flex-shrink-0">
             {!isEditing ? (
               <motion.button
                 whileHover={{ scale: 1.03 }}
@@ -282,7 +300,8 @@ const Profile = () => {
           </div>
         </div>
 
-                <AnimatePresence>
+        {/* Mensajes de feedback animados */}
+        <AnimatePresence>
           {msg.text && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -309,14 +328,16 @@ const Profile = () => {
           )}
         </AnimatePresence>
 
-                {!isEditing && (
+        {/* Modo visualización (lectura) */}
+        {!isEditing && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="p-8 pt-4"
           >
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+              {/* Tarjeta Nombre */}
+              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                 <div className="flex items-center text-slate-400 mb-2">
                   <User size={14} className="mr-2" />
                   <span className="text-xs font-semibold uppercase tracking-wider">Nombre</span>
@@ -326,7 +347,8 @@ const Profile = () => {
                 </p>
               </div>
 
-                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+              {/* Tarjeta Ubicación */}
+              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                 <div className="flex items-center text-slate-400 mb-2">
                   <MapPin size={14} className="mr-2" />
                   <span className="text-xs font-semibold uppercase tracking-wider">Ubicación</span>
@@ -336,7 +358,8 @@ const Profile = () => {
                 </p>
               </div>
 
-                            <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+              {/* Tarjeta Email */}
+              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                 <div className="flex items-center text-slate-400 mb-2">
                   <Mail size={14} className="mr-2" />
                   <span className="text-xs font-semibold uppercase tracking-wider">Correo</span>
@@ -347,7 +370,8 @@ const Profile = () => {
               </div>
             </div>
 
-                        <div className="mt-6 bg-slate-50 rounded-2xl p-5 border border-slate-100">
+            {/* Sección Bio */}
+            <div className="mt-6 bg-slate-50 rounded-2xl p-5 border border-slate-100">
               <div className="flex items-center text-slate-400 mb-2">
                 <FileText size={14} className="mr-2" />
                 <span className="text-xs font-semibold uppercase tracking-wider">Acerca de mí</span>
@@ -359,7 +383,8 @@ const Profile = () => {
           </motion.div>
         )}
 
-                <AnimatePresence>
+        {/* Modo edición (formulario) */}
+        <AnimatePresence>
           {isEditing && (
             <motion.form
               initial={{ opacity: 0, y: 10 }}
@@ -369,7 +394,8 @@ const Profile = () => {
               className="p-8 border-t border-slate-50 space-y-6"
               id="profile-edit-form"
             >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Nombre y Ubicación */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="flex items-center text-sm font-semibold text-slate-700 mb-2" htmlFor="profile-input-name">
                     <User size={14} className="mr-2 text-slate-400" />
@@ -425,7 +451,8 @@ const Profile = () => {
                 </div>
               </div>
 
-                            <div>
+              {/* Biografía con contador */}
+              <div>
                 <label className="flex items-center text-sm font-semibold text-slate-700 mb-2" htmlFor="profile-input-bio">
                   <FileText size={14} className="mr-2 text-slate-400" />
                   Biografía / Acerca de ti
@@ -452,7 +479,8 @@ const Profile = () => {
                 </div>
               </div>
 
-                            <div className="bg-slate-50 rounded-2xl p-5 border-2 border-dashed border-slate-200">
+              {/* Zona de foto de perfil */}
+              <div className="bg-slate-50 rounded-2xl p-5 border-2 border-dashed border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="bg-blue-100 p-2.5 rounded-xl">
@@ -484,7 +512,8 @@ const Profile = () => {
                 )}
               </div>
 
-                            <div className="flex justify-end space-x-3 pt-4">
+              {/* Botones de acción */}
+              <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={handleCancel}
